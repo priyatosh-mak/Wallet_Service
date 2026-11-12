@@ -1,0 +1,79 @@
+
+server:
+  port: 8082
+
+spring:
+  application:
+    name: wallet-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/walletservice}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+
+logging:
+  level:
+    wallet.security.audit: INFO
+  pattern:
+    level: "%5p [${spring.application.name},%X{correlationId:-}]"
+
+mightyfin:
+  auth:
+    enabled: false
+    jwks-uri: http://localhost:9999/.well-known/jwks.json
+    issuer: local-development
+    audience: wallet-local
+    public-paths:
+      - /actuator/health
+      - /actuator/health/**
+    grpc:
+      host: localhost
+      port: 9090
+      deadline-ms: 200
+      max-retries: 1
+
+wallet:
+  auth-grpc:
+    enabled: false
+    host: localhost
+    port: 9090
+    deadline-ms: 2000
+
+  security:
+    rate-limit:
+      enabled: true
+      money-requests-per-minute: 20
+      path-patterns:
+        - /api/v1/**
+    idempotency:
+      retention-hours: 24
+
+  outbox:
+    publisher-enabled: false
+    topic: wallet.events
+    batch-size: 50
+    max-attempts: 10
+    poll-interval-ms: 1000
+    retry-backoff-seconds: 30
+    send-timeout-seconds: 10

@@ -1,0 +1,5 @@
+# Local development only (--spring.profiles.active=local). Never use outside a developer machine.
+wallet:
+  auth-grpc:
+    allow-plaintext: true                 # PIN channel without mTLS; startup refuses this under the prod profile
+# CONFIRM with the auth starter docs: also switch its own gRPC channel to its local/test mode here.
