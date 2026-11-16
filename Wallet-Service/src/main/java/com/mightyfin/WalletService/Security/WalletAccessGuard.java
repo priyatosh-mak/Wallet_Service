@@ -16,15 +16,15 @@ public class WalletAccessGuard {
     }
 
     /** Throws {@link WalletSecurityException.WalletNotFound} when the caller may not access the wallet. */
-    // public void assertCanAccess(AuthPrincipal caller, WalletScope wallet) {
-    //     Objects.requireNonNull(caller, "caller must not be null");
-    //     Objects.requireNonNull(wallet, "wallet must not be null");
-    //     String reason = denialReason(caller, wallet);
-    //     if (reason != null) {
-    //         audit.accessDenied(caller, reason);
-    //         throw new WalletSecurityException.WalletNotFound();
-    //     }
-    // }
+    public void assertCanAccess(AuthPrincipal caller, WalletScope wallet) {
+        Objects.requireNonNull(caller, "caller must not be null");
+        Objects.requireNonNull(wallet, "wallet must not be null");
+        String reason = denialReason(caller, wallet);
+        if (reason != null) {
+            audit.accessDenied(caller, reason);
+            throw new WalletSecurityException.WalletNotFound();
+        }
+    }
 
     /**
      * Back-office operations that no permission code covers yet (reference data, wallet creation, type
@@ -84,33 +84,34 @@ public class WalletAccessGuard {
         throw new WalletSecurityException.WalletNotFound();
     }
 
-    // private static String denialReason(AuthPrincipal caller, WalletScope wallet) {
-    //     String role = caller.role();
 
-    //     if (WalletRole.PLATFORM_ADMINS.contains(role)) {
-    //         return null;
-    //     }
-    //     if (WalletRole.INDIVIDUAL.equals(role)) {
-    //         boolean own = wallet.businessPublicUuid() == null
-    //                 && caller.userId() != null
-    //                 && caller.userId().equals(wallet.ownerUserId());
-    //         return own ? null : "not_owner";
-    //     }
-    //     if (WalletRole.ORGANISATION_ROLES.contains(role)) {
-    //         return businessMatches(caller.activeBusinessPublicUuid(), caller, wallet) ? null : "business_mismatch";
-    //     }
-    //     if (WalletRole.STAFF_ROLES.contains(role)) {
-    //         return businessMatches(caller.assignedCompanyPublicUuid(), caller, wallet) ? null : "company_mismatch";
-    //     }
-    //     return "unknown_role";
-    // }
+    private static String denialReason(AuthPrincipal caller, WalletScope wallet) {
+        String role = caller.role();
 
-    // private static boolean businessMatches(UUID callerBusiness, AuthPrincipal caller, WalletScope wallet) {
-    //     if (callerBusiness == null || !callerBusiness.equals(wallet.businessPublicUuid())) {
-    //         return false;
-    //     }
-    //     return wallet.tenantPublicUuid() == null || wallet.tenantPublicUuid().equals(caller.tenantPublicUuid());
-    // }
+        if (WalletRole.PLATFORM_ADMINS.contains(role)) {
+            return null;
+        }
+        if (WalletRole.INDIVIDUAL.equals(role)) {
+            boolean own = wallet.getBusinessPublicUuid() == null
+                    && caller.userId() != null
+                    && caller.userId().equals(wallet.getOwnerUserId());
+            return own ? null : "not_owner";
+        }
+        if (WalletRole.ORGANISATION_ROLES.contains(role)) {
+            return businessMatches(caller.activeBusinessPublicUuid(), caller, wallet) ? null : "business_mismatch";
+        }
+        if (WalletRole.STAFF_ROLES.contains(role)) {
+            return businessMatches(caller.assignedCompanyPublicUuid(), caller, wallet) ? null : "company_mismatch";
+        }
+        return "unknown_role";
+    }
+
+    private static boolean businessMatches(UUID callerBusiness, AuthPrincipal caller, WalletScope wallet) {
+        if (callerBusiness == null || !callerBusiness.equals(wallet.getBusinessPublicUuid())) {
+            return false;
+        }
+        return wallet.getTenantPublicUuid() == null || wallet.getTenantPublicUuid().equals(caller.tenantPublicUuid());
+    }
 
     /**
      * Repository filter derived from the caller.
