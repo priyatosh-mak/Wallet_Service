@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.mightyfin.WalletService.OutBox.OutBoxService;
 import com.mightyfin.WalletService.entity.Wallet;
+import com.mightyfin.WalletService.entity.WalletLimitIncreaseRequest;
 import com.mightyfinance.auth.starter.security.AuthPrincipal;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,13 @@ public class WalletEventRecorder {
     static final String ACTIVATED = "wallet.activated";
     static final String SUSPENDED = "wallet.suspended";
     static final String TYPE_CHANGED = "wallet.type_changed";
+    static final String LIMIT_CHANGED = "wallet.limit_changed";
+    static final String LIMIT_INCREASE_SUBMITTED = "wallet.limit_increase.submitted";
+    static final String LIMIT_INCREASE_APPROVED = "wallet.limit_increase.approved";
+    static final String LIMIT_INCREASE_REJECTED = "wallet.limit_increase.rejected";
+    static final String LIMIT_INCREASE_CANCELLED = "wallet.limit_increase.cancelled";
+    static final String LIMIT_INCREASE_EXPIRED = "wallet.limit_increase.expired";
+    static final String LIMIT_INCREASE_SUPERSEDED = "wallet.limit_increase.superseded"; 
 
     private final OutBoxService outboxService;
 
@@ -52,6 +60,51 @@ public class WalletEventRecorder {
         payload.put("previousWalletTypeCode", previousTypeCode);
         payload.put("performedBy", actor.userId());
         record(TYPE_CHANGED, wallet, payload);
+    }
+
+    public void walletLimitChanged(Wallet wallet, java.math.BigDecimal previousLimit, String previousPeriod,
+                                   AuthPrincipal actor) {
+        Map<String, Object> payload = basePayload(wallet);
+        payload.put("previousGeneralTransactionLimit", previousLimit);
+        payload.put("previousGeneralTransactionPeriod", previousPeriod);
+        payload.put("generalTransactionLimit", wallet.getGeneralTransactionLimit());
+        payload.put("generalTransactionPeriod", wallet.getGeneralTransactionPeriod().name());
+        payload.put("performedBy", actor.userId());
+        record(LIMIT_CHANGED, wallet, payload);
+    }
+
+     public void limitIncreaseSubmitted(WalletLimitIncreaseRequest r) {
+        limitIncrease(LIMIT_INCREASE_SUBMITTED, r);
+    }
+
+    public void limitIncreaseApproved(WalletLimitIncreaseRequest r) {
+        limitIncrease(LIMIT_INCREASE_APPROVED, r);
+    }
+
+    public void limitIncreaseRejected(WalletLimitIncreaseRequest r) {
+        limitIncrease(LIMIT_INCREASE_REJECTED, r);
+    }
+
+    public void limitIncreaseCancelled(WalletLimitIncreaseRequest r) {
+        limitIncrease(LIMIT_INCREASE_CANCELLED, r);
+    }
+
+    public void limitIncreaseExpired(WalletLimitIncreaseRequest r) {
+        limitIncrease(LIMIT_INCREASE_EXPIRED, r);
+    }
+
+    private void limitIncrease(String eventType, WalletLimitIncreaseRequest r) {
+        Wallet wallet = r.getWallet();
+        Map<String, Object> payload = basePayload(wallet);
+        payload.put("requestId", r.getId());
+        payload.put("status", r.getStatus().name());
+        payload.put("requestedByUserId", r.getRequestedByUserId());
+        payload.put("period", r.getPeriod().name());
+        payload.put("currentLimit", r.getCurrentLimit());
+        payload.put("requestedLimit", r.getRequestedLimit());
+        payload.put("approvedLimit", r.getApprovedLimit());
+        payload.put("decidedByUserId", r.getDecidedByUserId());
+        record(eventType, wallet, payload);
     }
 
     private Map<String, Object> basePayload(Wallet wallet) {

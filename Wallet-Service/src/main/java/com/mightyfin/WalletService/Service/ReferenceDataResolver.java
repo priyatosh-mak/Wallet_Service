@@ -2,6 +2,8 @@ package com.mightyfin.WalletService.Service;
 
 import java.util.Locale;
 
+import org.springframework.stereotype.Component;
+
 import com.mightyfin.WalletService.Exception.BusinessRuleException;
 import com.mightyfin.WalletService.Repo.CurrencyRepo;
 import com.mightyfin.WalletService.Repo.WalletTypeRepo;
@@ -11,6 +13,7 @@ import com.mightyfin.WalletService.entity.WalletType;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor 
+@Component 
 public class ReferenceDataResolver {
 
     private final CurrencyRepo currencyRepository;

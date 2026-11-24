@@ -3,10 +3,13 @@ package com.mightyfin.WalletService.Security;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.mightyfin.WalletService.Security.exception.WalletSecurityAudit;
 import com.mightyfin.WalletService.Security.exception.WalletSecurityException;
 import com.mightyfinance.auth.starter.security.AuthPrincipal;
 
+@Component 
 public class WalletAccessGuard {
 
     private final WalletSecurityAudit audit;

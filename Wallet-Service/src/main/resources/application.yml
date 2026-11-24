@@ -1,4 +1,3 @@
-
 server:
   port: 8082
 
@@ -7,24 +6,21 @@ spring:
     name: wallet-service
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/walletservice}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://localhost:5434/walletservice
+    username: walletservice
+    password: walletservice
 
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
 
-  flyway:
-    enabled: true
-
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: localhost:9092
     producer:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -40,23 +36,24 @@ logging:
 
 mightyfin:
   auth:
-    enabled: false
-    jwks-uri: http://localhost:9999/.well-known/jwks.json
-    issuer: local-development
-    audience: wallet-local
+    enabled: true
+    jwks-uri: http://localhost:8080/.well-known/jwks.json
+    issuer: mightyfin-auth-service
+    audience: ""
     public-paths:
       - /actuator/health
       - /actuator/health/**
     grpc:
-      host: localhost
+      host: 127.0.0.1
       port: 9090
-      deadline-ms: 200
+      deadline-ms: 2000
       max-retries: 1
+      allow-plaintext: true
 
 wallet:
   auth-grpc:
-    enabled: false
-    host: localhost
+    enabled: true
+    host: 127.0.0.1
     port: 9090
     deadline-ms: 2000
 
@@ -77,3 +74,9 @@ wallet:
     poll-interval-ms: 1000
     retry-backoff-seconds: 30
     send-timeout-seconds: 10
+
+  limit-increase:
+    expiry-days: 14
+    cooldown-after-rejection-hours: 24
+    cooldown-after-approval-hours: 24
+    max-general-limit: 100000

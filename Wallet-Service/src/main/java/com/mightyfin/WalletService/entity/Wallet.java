@@ -21,6 +21,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,10 +30,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data 
 @AllArgsConstructor 
-@NoArgsConstructor 
+@NoArgsConstructor
+@Table (name = "wallets")
 @Entity 
 public class Wallet {
 
+        public static final BigDecimal MAX_BALANCE = new BigDecimal("9999999999999999.99");
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -149,6 +152,17 @@ public class Wallet {
     public void credit(BigDecimal amount) {
         requirePositive(amount);
         balance = balance.add(amount);
+    }
+
+    public void changeGeneralTransactionLimit(BigDecimal limit, WalletLimitPeriod period) {
+        if (limit == null || limit.signum() < 0) {
+            throw new IllegalArgumentException("limit must be zero or positive");
+        }
+        if (period == null) {
+            throw new IllegalArgumentException("period is required");
+        }
+        this.generalTransactionLimit = limit;
+        this.generalTransactionPeriod = period;
     }
 
     /** Reserves {@code amount} for a pending cash-out. The balance itself does not change. Row lock required. */

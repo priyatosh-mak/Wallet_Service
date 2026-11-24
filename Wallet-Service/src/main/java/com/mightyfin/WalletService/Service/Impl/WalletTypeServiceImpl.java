@@ -6,8 +6,10 @@ import java.util.Locale;
 
 import org.apache.kafka.common.errors.DuplicateResourceException;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.stereotype.Service;
 
 import com.mightyfin.WalletService.Dto.request.CreateWalletTypeRequest;
+import com.mightyfin.WalletService.Dto.request.UpdateWalletTypeRequest;
 import com.mightyfin.WalletService.Dto.response.WalletTypeResponse;
 import com.mightyfin.WalletService.Exception.BusinessRuleException;
 import com.mightyfin.WalletService.Repo.WalletTypeRepo;
@@ -25,6 +27,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor 
+@Service 
 public class WalletTypeServiceImpl implements WalletTypeService{
     private final WalletTypeRepo walletTypeRepository;
     private final ReferenceDataMapper mapper;
@@ -98,6 +101,31 @@ public class WalletTypeServiceImpl implements WalletTypeService{
     //     events.walletTypeUpdated(type, caller);
     //     return mapper.toResponse(type);
     // }
+
+    @Override
+@Transactional
+public WalletTypeResponse update(String code, UpdateWalletTypeRequest request, AuthPrincipal caller) {
+    guard.requireSuperAdmin(caller);
+
+    WalletType type = requireType(code);
+
+    boolean canExtendCredit = Boolean.TRUE.equals(request.getCanExtendCredit());
+    requireConsistentQuota(canExtendCredit, request.getDefaultDisbursementQuotaLimit());
+
+    type.setName(request.getName().trim());
+    type.setDescription(blankToNull(request.getDescription()));
+    type.setDefaultCreditLimit(request.getDefaultCreditLimit());
+    type.setCanExtendCredit(canExtendCredit);
+    type.setDefaultDisbursementQuotaLimit(request.getDefaultDisbursementQuotaLimit());
+    type.setDefaultDisbursementQuotaPeriod(request.getDefaultDisbursementQuotaPeriod());
+    type.setDefaultGeneralTransactionLimit(request.getDefaultGeneralTransactionLimit());
+    type.setDefaultGeneralTransactionPeriod(request.getDefaultGeneralTransactionPeriod());
+    type.setValueChainCategory(blankToNull(request.getValueChainCategory()));
+
+    events.walletTypeUpdated(type, caller);
+
+    return mapper.toResponse(type);
+}
 
     @Override
     @Transactional

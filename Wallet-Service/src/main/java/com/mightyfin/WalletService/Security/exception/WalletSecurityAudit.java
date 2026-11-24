@@ -5,10 +5,11 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import com.mightyfinance.auth.starter.security.AuthPrincipal;
 
-
+@Component 
 public class WalletSecurityAudit {
 private static final Logger AUDIT = LoggerFactory.getLogger("WalletSecurityAudit.class");
 
@@ -39,6 +40,11 @@ private static final Logger AUDIT = LoggerFactory.getLogger("WalletSecurityAudit
     /** Call from the service layer after a money operation commits. */
     public void moneyOperation(AuthPrincipal caller, String operation, String resourceRef) {
         AUDIT.info("event=MONEY_OP user={} session={} role={} operation={} ref={}",
+                caller.userPublicUuid(), caller.sessionPublicUuid(), caller.role(), operation, resourceRef);
+    }
+
+    public void adminOperation(AuthPrincipal caller, String operation, String resourceRef) {
+        AUDIT.info("event=ADMIN_OP user={} session={} role={} operation={} ref={}",
                 caller.userPublicUuid(), caller.sessionPublicUuid(), caller.role(), operation, resourceRef);
     }
 }

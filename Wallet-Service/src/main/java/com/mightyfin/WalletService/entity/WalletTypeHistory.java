@@ -13,10 +13,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data 
 @Entity 
+@Table (name = "wallet_type_history")
+@NoArgsConstructor 
 public class WalletTypeHistory {
 
     @Id 

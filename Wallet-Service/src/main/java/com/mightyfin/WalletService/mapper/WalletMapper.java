@@ -1,14 +1,19 @@
 package com.mightyfin.WalletService.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.mightyfin.WalletService.Dto.response.CurrencySummary;
 import com.mightyfin.WalletService.Dto.response.WalletActivation;
 import com.mightyfin.WalletService.Dto.response.WalletLimits;
 import com.mightyfin.WalletService.Dto.response.WalletResponse;
+import com.mightyfin.WalletService.Dto.response.WalletTypeHistoryResponse;
 import com.mightyfin.WalletService.Dto.response.WalletTypeSummary;
 import com.mightyfin.WalletService.entity.Currency;
 import com.mightyfin.WalletService.entity.Wallet;
 import com.mightyfin.WalletService.entity.WalletType;
+import com.mightyfin.WalletService.entity.WalletTypeHistory;
 
+@Component 
 public class WalletMapper {
 
     public WalletResponse toResponse(Wallet wallet) {
@@ -57,18 +62,18 @@ public class WalletMapper {
         return response;
     }
 
-    // public WalletTypeHistoryResponse toResponse(WalletTypeHistory history) {
-    //     WalletTypeHistoryResponse response = new WalletTypeHistoryResponse();
+    public WalletTypeHistoryResponse toResponse(WalletTypeHistory history) {
+        WalletTypeHistoryResponse response = new WalletTypeHistoryResponse();
 
-    //     response.setId(history.getId());
-    //     response.setWalletId(history.getWallet().getId());
-    //     response.setWalletTypeCode(history.getWalletType().getCode());
-    //     response.setWalletTypeName(history.getWalletType().getName());
-    //     response.setEffectiveFrom(history.getEffectiveFrom());
-    //     response.setEffectiveTo(history.getEffectiveTo());
-    //     response.setSupersededById(history.getSupersededById());
-    //     response.setCurrent(history.isCurrent());
+        response.setId(history.getId());
+        response.setWalletId(history.getWallet().getId());
+        response.setWalletTypeCode(history.getWalletType().getCode());
+        response.setWalletTypeName(history.getWalletType().getName());
+        response.setEffectiveFrom(history.getEffectiveFrom());
+        response.setEffectiveTo(history.getEffectiveTo());
+        response.setSupersededById(history.getSupersededById());
+        response.setCurrent(history.isCurrent());
 
-    //     return response;
-    // }
+        return response;
+    }
 }

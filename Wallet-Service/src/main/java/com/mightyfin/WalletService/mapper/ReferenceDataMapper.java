@@ -1,10 +1,13 @@
 package com.mightyfin.WalletService.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.mightyfin.WalletService.Dto.response.CurrencyResponse;
 import com.mightyfin.WalletService.Dto.response.WalletTypeResponse;
 import com.mightyfin.WalletService.entity.Currency;
 import com.mightyfin.WalletService.entity.WalletType;
 
+@Component 
 public class ReferenceDataMapper {
 
     public CurrencyResponse toResponse(Currency c) {

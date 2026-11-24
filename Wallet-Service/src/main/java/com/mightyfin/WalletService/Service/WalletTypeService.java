@@ -3,6 +3,7 @@ package com.mightyfin.WalletService.Service;
 import java.util.List;
 
 import com.mightyfin.WalletService.Dto.request.CreateWalletTypeRequest;
+import com.mightyfin.WalletService.Dto.request.UpdateWalletTypeRequest;
 import com.mightyfin.WalletService.Dto.response.WalletTypeResponse;
 import com.mightyfinance.auth.starter.security.AuthPrincipal;
 
@@ -19,7 +20,7 @@ public interface WalletTypeService {
     WalletTypeResponse create(CreateWalletTypeRequest request, AuthPrincipal caller);
 
     /** Requires super_admin. Replaces the editable attributes; the code is immutable. */
-    // WalletTypeResponse update(String code, UpdateWalletTypeRequest request, AuthPrincipal caller);
+    WalletTypeResponse update(String code, UpdateWalletTypeRequest request, AuthPrincipal caller);
 
     /** Requires super_admin. Idempotent. */
     WalletTypeResponse activate(String code, AuthPrincipal caller);

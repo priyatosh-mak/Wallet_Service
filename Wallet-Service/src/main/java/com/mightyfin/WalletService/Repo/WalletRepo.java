@@ -26,4 +26,7 @@ public interface WalletRepo extends JpaRepository<Wallet, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select w from Wallet w where w.id = :id")
     Optional<Wallet> findByIdForUpdate(@Param("id") Integer id);
+
+    @Query("select w.userId as userId, w.businessPublicUuid as businessPublicUuid from Wallet w where w.id = :id")
+    Optional<WalletOwnerView> findOwnerById(@Param("id") Integer id);
 }

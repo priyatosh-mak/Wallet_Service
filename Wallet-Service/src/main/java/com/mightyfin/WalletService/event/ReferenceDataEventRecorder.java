@@ -3,6 +3,8 @@ package com.mightyfin.WalletService.event;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import com.mightyfin.WalletService.OutBox.OutBoxService;
 import com.mightyfin.WalletService.entity.Currency;
 import com.mightyfin.WalletService.entity.WalletType;
@@ -11,6 +13,7 @@ import com.mightyfinance.auth.starter.security.AuthPrincipal;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor 
+@Component 
 public class ReferenceDataEventRecorder {
     static final String CURRENCY_AGGREGATE = "currency";
     static final String CURRENCY_CREATED = "currency.created";

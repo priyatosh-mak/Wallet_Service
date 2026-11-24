@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import org.apache.kafka.common.errors.DuplicateResourceException;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.stereotype.Service;
 
 import com.mightyfin.WalletService.Dto.request.CreateCurrencyRequest;
 import com.mightyfin.WalletService.Dto.request.UpdateCurrencyRequest;
@@ -21,6 +22,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor 
+@Service 
 public class CurrencyServiceImpl implements CurrencyService {
     
         private static final short DEFAULT_MINOR_UNITS = 2;

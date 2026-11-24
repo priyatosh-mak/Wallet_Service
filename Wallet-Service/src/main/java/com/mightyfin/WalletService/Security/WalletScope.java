@@ -2,6 +2,8 @@ package com.mightyfin.WalletService.Security;
 
 import java.util.UUID;
 
+import com.mightyfin.WalletService.entity.Wallet;
+
 public class WalletScope {
 
     private Integer ownerUserId;
@@ -46,11 +48,12 @@ public class WalletScope {
         return new WalletScope(null, businessPublicUuid, tenantPublicUuid);
     }
 
-    // public static WalletScope of(Wallet wallet) {
-    //     return new WalletScope(
-    //             wallet.getUserId(),
-    //             wallet.getBusinessPublicUuid(),
-    //             null
-    //     );
+    public static WalletScope of(Wallet wallet) {
+        return new WalletScope(
+                wallet.getUserId(),
+                wallet.getBusinessPublicUuid(),
+                null
+        );
     }
+}
 
