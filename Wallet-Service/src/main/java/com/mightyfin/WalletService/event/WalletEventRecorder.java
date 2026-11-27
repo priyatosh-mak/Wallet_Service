@@ -7,13 +7,18 @@ import org.springframework.stereotype.Component;
 
 import com.mightyfin.WalletService.OutBox.OutBoxService;
 import com.mightyfin.WalletService.entity.Wallet;
+import com.mightyfin.WalletService.entity.WalletCreditReservation;
 import com.mightyfin.WalletService.entity.WalletLimitIncreaseRequest;
+import com.mightyfin.WalletService.entity.WalletQuotaIncreaseRequest;
+import com.mightyfin.WalletService.entity.Enum.QuotaKind;
 import com.mightyfinance.auth.starter.security.AuthPrincipal;
 
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 @Component 
 @RequiredArgsConstructor 
+@Data 
 public class WalletEventRecorder {
 
 
@@ -22,6 +27,13 @@ public class WalletEventRecorder {
     static final String ACTIVATED = "wallet.activated";
     static final String SUSPENDED = "wallet.suspended";
     static final String TYPE_CHANGED = "wallet.type_changed";
+    static final String QUOTA_CHANGED = "wallet.quota_changed";
+    static final String QUOTA_INCREASE_SUBMITTED = "wallet.quota_increase.submitted";
+    static final String QUOTA_INCREASE_APPROVED = "wallet.quota_increase.approved";
+    static final String QUOTA_INCREASE_REJECTED = "wallet.quota_increase.rejected";
+    static final String QUOTA_INCREASE_CANCELLED = "wallet.quota_increase.cancelled";
+    static final String QUOTA_INCREASE_EXPIRED = "wallet.quota_increase.expired";
+    static final String QUOTA_RESTORED = "wallet.quota_restored";
     static final String LIMIT_CHANGED = "wallet.limit_changed";
     static final String LIMIT_INCREASE_SUBMITTED = "wallet.limit_increase.submitted";
     static final String LIMIT_INCREASE_APPROVED = "wallet.limit_increase.approved";
@@ -117,5 +129,70 @@ public class WalletEventRecorder {
     private void record(String eventType, Wallet wallet, Map<String, Object> payload) {
         String walletId = String.valueOf(wallet.getId());
         outboxService.record(eventType, AGGREGATE_TYPE, walletId, walletId, payload);
+    }
+
+    public void quotaChanged(Wallet wallet, QuotaKind kind, java.math.BigDecimal previousRemaining,
+                             boolean previousEnabled, AuthPrincipal actor) {
+        Map<String, Object> payload = basePayload(wallet);
+        payload.put("quota", kind.name());
+        payload.put("previousEnabled", previousEnabled);
+        payload.put("enabled", wallet.isQuotaEnabled(kind));
+        payload.put("previousRemaining", previousRemaining);
+        payload.put("remaining", wallet.getQuotaRemaining(kind));
+        payload.put("performedBy", actor.userId());
+        record(QUOTA_CHANGED, wallet, payload);
+    }
+
+    public void quotaIncreaseSubmitted(WalletQuotaIncreaseRequest r) {
+        quotaIncrease(QUOTA_INCREASE_SUBMITTED, r);
+    }
+
+    public void quotaIncreaseApproved(WalletQuotaIncreaseRequest r) {
+        quotaIncrease(QUOTA_INCREASE_APPROVED, r);
+    }
+
+    public void quotaIncreaseRejected(WalletQuotaIncreaseRequest r) {
+        quotaIncrease(QUOTA_INCREASE_REJECTED, r);
+    }
+
+    public void quotaIncreaseCancelled(WalletQuotaIncreaseRequest r) {
+        quotaIncrease(QUOTA_INCREASE_CANCELLED, r);
+    }
+
+    public void quotaIncreaseExpired(WalletQuotaIncreaseRequest r) {
+        quotaIncrease(QUOTA_INCREASE_EXPIRED, r);
+    }
+
+    /** Principal was repaid and quota went back to the wallet(s) that supplied / originated the loan. */
+    public void quotaRestored(Wallet borrower, WalletCreditReservation r, java.math.BigDecimal restored) {
+        Map<String, Object> payload = reservationPayload(borrower, r);
+        payload.put("restored", restored);
+        payload.put("restoredTotal", r.getRestoredAmount());
+        record(QUOTA_RESTORED, borrower, payload);
+    }
+
+    private Map<String, Object> reservationPayload(Wallet borrower, WalletCreditReservation r) {
+        Map<String, Object> payload = basePayload(borrower);
+        payload.put("reservationId", r.getId());
+        payload.put("agreementId", r.getAgreementId());
+        payload.put("status", r.getStatus().name());
+        payload.put("amount", r.getAmount());
+        payload.put("supplierWalletId", r.getSupplierWalletId());
+        payload.put("originationWalletId", r.getOriginationWalletId());
+        return payload;
+    }
+
+    private void quotaIncrease(String eventType, WalletQuotaIncreaseRequest r) {
+        Wallet wallet = r.getWallet();
+        Map<String, Object> payload = basePayload(wallet);
+        payload.put("requestId", r.getId());
+        payload.put("quota", r.getQuotaKind().name());
+        payload.put("status", r.getStatus().name());
+        payload.put("requestedByUserId", r.getRequestedByUserId());
+        payload.put("remainingWhenAsked", r.getRemainingWhenAsked());
+        payload.put("requestedIncrease", r.getRequestedIncrease());
+        payload.put("approvedIncrease", r.getApprovedIncrease());
+        payload.put("decidedByUserId", r.getDecidedByUserId());
+        record(eventType, wallet, payload);
     }
 }

@@ -51,34 +51,35 @@ public class WalletTypeServiceImpl implements WalletTypeService{
     }
 
     @Override
-    @Transactional 
-    public WalletTypeResponse create(CreateWalletTypeRequest request, AuthPrincipal caller) {
-        guard.requireSuperAdmin(caller);
-        String code = request.getCode().trim().toUpperCase(Locale.ROOT);
-        if (walletTypeRepository.existsByCodeIgnoreCase(code)) {
-            throw new DuplicateResourceException("Wallet type already exists: " + code);
-        }
-        boolean canExtendCredit = Boolean.TRUE.equals(request.getCanExtendCredit());
-        requireConsistentQuota(canExtendCredit, request.getDefaultDisbursementQuotaLimit());
+@Transactional
+public WalletTypeResponse create(CreateWalletTypeRequest request, AuthPrincipal caller) {
+    guard.requireSuperAdmin(caller);
 
-        WalletType type = walletTypeRepository.save(WalletType.builder()
+    String code = request.getCode().trim().toUpperCase(Locale.ROOT);
+
+    if (walletTypeRepository.existsByCodeIgnoreCase(code)) {
+        throw new DuplicateResourceException("Wallet type already exists: " + code);
+    }
+
+    WalletType type = walletTypeRepository.save(WalletType.builder()
                 .code(code)
                 .name(request.getName().trim())
                 .description(blankToNull(request.getDescription()))
                 .defaultCreditLimit(request.getDefaultCreditLimit())
-                .canExtendCredit(canExtendCredit)
-                .defaultDisbursementQuotaLimit(request.getDefaultDisbursementQuotaLimit())
-                .defaultDisbursementQuotaPeriod(request.getDefaultDisbursementQuotaPeriod() != null
-                        ? request.getDefaultDisbursementQuotaPeriod() : DisbursementQuotaPeriod.MONTHLY)
+                .mayEnableSupply(request.getMayEnableSupply())
+                .mayEnableOrigination(request.getMayEnableOrigination())
+                .defaultSupplyQuotaLimit(request.getDefaultSupplyQuotaLimit())
+                .defaultOriginationQuotaLimit(request.getDefaultOriginationQuotaLimit())
                 .defaultGeneralTransactionLimit(request.getDefaultGeneralTransactionLimit())
                 .defaultGeneralTransactionPeriod(request.getDefaultGeneralTransactionPeriod() != null
                         ? request.getDefaultGeneralTransactionPeriod() : WalletLimitPeriod.DAILY)
                 .valueChainCategory(blankToNull(request.getValueChainCategory()))
                 .build());
 
-        events.walletTypeCreated(type, caller);
-        return mapper.toResponse(type);
-    }
+    events.walletTypeCreated(type, caller);
+
+    return mapper.toResponse(type);
+}
 
     // @Override
     // @Transactional
@@ -103,29 +104,29 @@ public class WalletTypeServiceImpl implements WalletTypeService{
     // }
 
     @Override
-@Transactional
-public WalletTypeResponse update(String code, UpdateWalletTypeRequest request, AuthPrincipal caller) {
-    guard.requireSuperAdmin(caller);
+    @Transactional
+    public WalletTypeResponse update(String code, UpdateWalletTypeRequest request, AuthPrincipal caller) {
+        guard.requireSuperAdmin(caller);
+        WalletType type = requireType(code);
+        boolean mayEnableSupply = Boolean.TRUE.equals(request.getMayEnableSupply());
+        boolean mayEnableOrigination = Boolean.TRUE.equals(request.getMayEnableOrigination());
+        requireConsistentQuota(mayEnableSupply, mayEnableOrigination,
+                request.getDefaultSupplyQuotaLimit(), request.getDefaultOriginationQuotaLimit());
 
-    WalletType type = requireType(code);
+        type.update(request.getName().trim(),
+                blankToNull(request.getDescription()),
+                request.getDefaultCreditLimit(),
+                mayEnableSupply,
+                mayEnableOrigination,
+                request.getDefaultSupplyQuotaLimit(),
+                request.getDefaultOriginationQuotaLimit(),
+                request.getDefaultGeneralTransactionLimit(),
+                request.getDefaultGeneralTransactionPeriod(),
+                blankToNull(request.getValueChainCategory()));
 
-    boolean canExtendCredit = Boolean.TRUE.equals(request.getCanExtendCredit());
-    requireConsistentQuota(canExtendCredit, request.getDefaultDisbursementQuotaLimit());
-
-    type.setName(request.getName().trim());
-    type.setDescription(blankToNull(request.getDescription()));
-    type.setDefaultCreditLimit(request.getDefaultCreditLimit());
-    type.setCanExtendCredit(canExtendCredit);
-    type.setDefaultDisbursementQuotaLimit(request.getDefaultDisbursementQuotaLimit());
-    type.setDefaultDisbursementQuotaPeriod(request.getDefaultDisbursementQuotaPeriod());
-    type.setDefaultGeneralTransactionLimit(request.getDefaultGeneralTransactionLimit());
-    type.setDefaultGeneralTransactionPeriod(request.getDefaultGeneralTransactionPeriod());
-    type.setValueChainCategory(blankToNull(request.getValueChainCategory()));
-
-    events.walletTypeUpdated(type, caller);
-
-    return mapper.toResponse(type);
-}
+        events.walletTypeUpdated(type, caller);
+        return mapper.toResponse(type);
+    }
 
     @Override
     @Transactional
@@ -162,12 +163,17 @@ public WalletTypeResponse update(String code, UpdateWalletTypeRequest request, A
     }
 
     /** A disbursement quota only makes sense for types that may grant credit to others. */
-    private static void requireConsistentQuota(boolean canExtendCredit, BigDecimal disbursementQuotaLimit) {
-        if (!canExtendCredit && disbursementQuotaLimit != null) {
+    private static void requireConsistentQuota(boolean mayEnableSupply, boolean mayEnableOrigination,
+                                               BigDecimal supplyHint, BigDecimal originationHint) {
+        if (!mayEnableSupply && supplyHint != null) {
             throw new BusinessRuleException("INVALID_WALLET_TYPE_CONFIG",
-                    "A disbursement quota limit can only be set on a type that can extend credit");
+                    "A supply quota default can only be set on a type that may enable supply");
         }
-    }
+        if (!mayEnableOrigination && originationHint != null) {
+            throw new BusinessRuleException("INVALID_WALLET_TYPE_CONFIG",
+                    "An origination quota default can only be set on a type that may enable origination");
+        }
+        }
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();

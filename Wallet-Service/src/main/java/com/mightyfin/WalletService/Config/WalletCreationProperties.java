@@ -9,5 +9,5 @@ import lombok.Data;
 @Data 
 public class WalletCreationProperties {
 
-    boolean autoActivateCustomers=true;
+    private boolean autoActivateCustomers = true;
 }

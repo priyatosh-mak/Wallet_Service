@@ -28,6 +28,7 @@ import com.mightyfin.WalletService.entity.Currency;
 import com.mightyfin.WalletService.entity.Wallet;
 import com.mightyfin.WalletService.entity.WalletType;
 import com.mightyfin.WalletService.entity.WalletTypeHistory;
+import com.mightyfin.WalletService.entity.Enum.QuotaKind;
 import com.mightyfin.WalletService.entity.Enum.WalletTypeCode;
 import com.mightyfin.WalletService.event.WalletEventRecorder;
 import com.mightyfin.WalletService.mapper.WalletMapper;
@@ -63,47 +64,29 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional
-    public WalletResponse createCustomerWallet(CreateCustomerWalletRequest request,AuthPrincipal caller) {
-
+    public WalletResponse createCustomerWallet(CreateCustomerWalletRequest request, AuthPrincipal caller) {
         guard.requireSuperAdmin(caller);
-
         if (walletRepository.existsByUserId(request.getUserId())) {
             throw duplicateCustomerWallet(request.getUserId());
         }
-
         WalletType type = referenceData.requireActiveWalletType(WalletTypeCode.CUSTOMER.name());
-
         Currency currency = referenceData.requireActiveCurrency(request.getCurrencyCode());
 
-        return open(newWallet(request.getUserId(), null, type, currency),
-                type,
-                creationProperties.isAutoActivateCustomers(),
-                caller
-        );
+        return open(newWallet(request.getUserId(), null, type, currency), type, creationProperties.isAutoActivateCustomers(), caller);
     }
 
     @Override
     @Transactional
-    public WalletResponse createBusinessWallet(CreateBusinessWalletRequest request,AuthPrincipal caller) {
-
+    public WalletResponse createBusinessWallet(CreateBusinessWalletRequest request, AuthPrincipal caller) {
         guard.requireSuperAdmin(caller);
-
         if (walletRepository.existsByBusinessPublicUuid(request.getBusinessPublicUuid())) {
             throw duplicateBusinessWallet(request.getBusinessPublicUuid());
         }
-
         WalletType type = referenceData.requireActiveWalletType(request.getWalletTypeCode());
-
         WalletTypeRules.requireCompatible(type, false);
-
         Currency currency = referenceData.requireActiveCurrency(request.getCurrencyCode());
 
-        return open(
-                newWallet(null, request.getBusinessPublicUuid(), type, currency),
-                type,
-                false,
-                caller
-        );
+        return open(newWallet(null, request.getBusinessPublicUuid(), type, currency), type, false, caller);
     }
 
     // ------------------------------------------------------------
@@ -156,35 +139,34 @@ public class WalletServiceImpl implements WalletService {
      * Creates a wallet with default configuration.
      * New wallets have zero balance and are inactive until activated.
      */
-    private Wallet newWallet(Integer userId,UUID businessPublicUuid,WalletType type,Currency currency) {
+    private Wallet newWallet(
+        Integer userId,
+        UUID businessPublicUuid,
+        WalletType type,
+        Currency currency) {
 
-        Wallet wallet = new Wallet();
+    Wallet wallet = new Wallet();
 
-        wallet.setUserId(userId);
-        wallet.setBusinessPublicUuid(businessPublicUuid);
-        wallet.setWalletType(type);
-        wallet.setCurrency(currency);
-        wallet.setBalance(BigDecimal.ZERO);
+    wallet.setUserId(userId);
+    wallet.setBusinessPublicUuid(businessPublicUuid);
+    wallet.setWalletType(type);
+    wallet.setCurrency(currency);
 
-        wallet.setCreditLimit(type.getDefaultCreditLimit() != null? type.getDefaultCreditLimit(): BigDecimal.ZERO);
+    wallet.setCreditLimit(
+            type.getDefaultCreditLimit() != null
+                    ? type.getDefaultCreditLimit()
+                    : BigDecimal.ZERO
+    );
 
-        wallet.setGeneralTransactionLimit(type.getDefaultGeneralTransactionLimit());
+    wallet.setGeneralTransactionLimit(type.getDefaultGeneralTransactionLimit());
+    wallet.setGeneralTransactionPeriod(type.getDefaultGeneralTransactionPeriod());
 
-        wallet.setGeneralTransactionPeriod(type.getDefaultGeneralTransactionPeriod());
+    // Supply and origination start disabled.
+    wallet.disableQuota(QuotaKind.SUPPLY);
+    wallet.disableQuota(QuotaKind.ORIGINATION);
 
-        wallet.setDisbursementQuotaLimit(
-                type.isCanExtendCredit()
-                        && type.getDefaultDisbursementQuotaLimit() != null
-                                ? type.getDefaultDisbursementQuotaLimit()
-                                : BigDecimal.ZERO
-        );
-
-        wallet.setDisbursementQuotaUsed(BigDecimal.ZERO);
-
-        wallet.setDisbursementQuotaPeriod(type.getDefaultDisbursementQuotaPeriod());
-
-        return wallet;
-    }
+    return wallet;
+}
 
     /**
      * Saves the wallet, records its initial type history and creation event.

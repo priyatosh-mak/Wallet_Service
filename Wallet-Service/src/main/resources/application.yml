@@ -31,6 +31,8 @@ spring:
 logging:
   level:
     wallet.security.audit: INFO
+    com.mightyfinance.auth.starter: DEBUG
+    org.springframework.security: DEBUG
   pattern:
     level: "%5p [${spring.application.name},%X{correlationId:-}]"
 
@@ -43,6 +45,7 @@ mightyfin:
     public-paths:
       - /actuator/health
       - /actuator/health/**
+      - /error
     grpc:
       host: 127.0.0.1
       port: 9090

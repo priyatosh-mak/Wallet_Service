@@ -24,6 +24,10 @@ public class WalletTypeResponse {
     private WalletLimitPeriod defaultGeneralTransactionPeriod;
     private String valueChainCategory;
     private boolean active;
+    private boolean mayEnableSupply;
+    private boolean mayEnableOrigination;
+    private BigDecimal defaultSupplyQuotaLimit;
+    private BigDecimal defaultOriginationQuotaLimit;
 
     public WalletTypeResponse() {
     }

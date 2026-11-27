@@ -12,6 +12,8 @@ public class WalletTypeSummary {
     private String code;
     private String name;
     private boolean canExtendCredit;
+     private boolean mayEnableSupply;
+    private boolean mayEnableOrigination;
 
     public WalletTypeSummary() {
     }

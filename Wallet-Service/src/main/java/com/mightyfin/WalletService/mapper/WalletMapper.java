@@ -25,7 +25,8 @@ public class WalletMapper {
         walletType.setId(type.getId());
         walletType.setCode(type.getCode());
         walletType.setName(type.getName());
-        walletType.setCanExtendCredit(type.isCanExtendCredit());
+        walletType.setMayEnableSupply(type.isMayEnableSupply());
+        walletType.setMayEnableOrigination(type.isMayEnableOrigination());
 
         CurrencySummary currencySummary = new CurrencySummary();
         currencySummary.setId(currency.getId());
@@ -36,9 +37,14 @@ public class WalletMapper {
         WalletLimits limits = new WalletLimits();
         limits.setGeneralTransactionLimit(wallet.getGeneralTransactionLimit());
         limits.setGeneralTransactionPeriod(wallet.getGeneralTransactionPeriod());
-        limits.setDisbursementQuotaLimit(wallet.getDisbursementQuotaLimit());
-        limits.setDisbursementQuotaUsed(wallet.getDisbursementQuotaUsed());
-        limits.setDisbursementQuotaPeriod(wallet.getDisbursementQuotaPeriod());
+
+        limits.setCanSupplyOnCredit(wallet.isCanSupplyOnCredit());
+        limits.setSupplyQuotaLimit(wallet.getSupplyQuotaLimit());
+
+        limits.setCanOriginateLoans(wallet.isCanOriginateLoans());
+        limits.setOriginationQuotaLimit(wallet.getOriginationQuotaLimit());
+
+        limits.setCreditReserved(wallet.getCreditReserved());
 
         WalletActivation activation = new WalletActivation();
         activation.setStatus(wallet.getStatus());
@@ -52,6 +58,8 @@ public class WalletMapper {
         response.setWalletType(walletType);
         response.setCurrency(currencySummary);
         response.setBalance(wallet.getBalance());
+        response.setHeldBalance(wallet.getHeldBalance());
+        response.setAvailableBalance(wallet.getAvailableBalance());
         response.setCreditLimit(wallet.getCreditLimit());
         response.setPinDashboard(wallet.isPinDashboard());
         response.setLimits(limits);

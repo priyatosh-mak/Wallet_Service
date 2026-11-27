@@ -17,6 +17,8 @@ public class WalletResponse {
     private WalletTypeSummary walletType;
     private CurrencySummary currency;
     private BigDecimal balance;
+    private BigDecimal heldBalance;
+    private BigDecimal availableBalance;
     private BigDecimal creditLimit;
     private boolean pinDashboard;
     private WalletLimits limits;

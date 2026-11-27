@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.mightyfin.WalletService.entity.Enum.DisbursementQuotaPeriod;
+import com.mightyfin.WalletService.entity.Enum.QuotaKind;
 import com.mightyfin.WalletService.entity.Enum.WalletLimitPeriod;
 import com.mightyfin.WalletService.entity.Enum.WalletStatus;
 
@@ -36,7 +37,7 @@ import lombok.NoArgsConstructor;
 public class Wallet {
 
         public static final BigDecimal MAX_BALANCE = new BigDecimal("9999999999999999.99");
-    @Id 
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
@@ -89,18 +90,30 @@ public class Wallet {
     @Column(name = "general_transaction_period", nullable = false, length = 16)
     private WalletLimitPeriod generalTransactionPeriod = WalletLimitPeriod.DAILY;
 
+    /** Live Limit 1 gate. Default false. Fail-closed: also needs {@code walletType.mayEnableSupply}. */
     @Builder.Default
-    @Column(name = "disbursement_quota_limit", nullable = false, precision = 18, scale = 2)
-    private BigDecimal disbursementQuotaLimit = BigDecimal.ZERO;
+    @Column(name = "can_supply_on_credit", nullable = false)
+    private boolean canSupplyOnCredit = false;
 
+    /** Live Limit 2 gate. Default false. Fail-closed: also needs {@code walletType.mayEnableOrigination}. */
     @Builder.Default
-    @Column(name = "disbursement_quota_used", nullable = false, precision = 18, scale = 2)
-    private BigDecimal disbursementQuotaUsed = BigDecimal.ZERO;
+    @Column(name = "can_originate_loans", nullable = false)
+    private boolean canOriginateLoans = false;
 
+    /** Limit 1 REMAINING (goods still supplyable on credit). Enabled and 0 means exhausted, not unlimited. */
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "disbursement_quota_period", nullable = false, length = 16)
-    private DisbursementQuotaPeriod disbursementQuotaPeriod = DisbursementQuotaPeriod.MONTHLY;
+    @Column(name = "supply_quota_limit", nullable = false, precision = 18, scale = 2)
+    private BigDecimal supplyQuotaLimit = BigDecimal.ZERO;
+
+    /** Limit 2 REMAINING (loans still originable). Enabled and 0 means exhausted, not unlimited. */
+    @Builder.Default
+    @Column(name = "origination_quota_limit", nullable = false, precision = 18, scale = 2)
+    private BigDecimal originationQuotaLimit = BigDecimal.ZERO;
+
+    /** Pooled credit promised to requests that are not disbursed yet (customer side). */
+    @Builder.Default
+    @Column(name = "credit_reserved", nullable = false, precision = 18, scale = 2)
+    private BigDecimal creditReserved = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -202,4 +215,142 @@ public class Wallet {
     public void changeType(WalletType newType) {
         this.walletType = newType;
     }
+
+    // ---------------------------------------------------------------- supply / origination quotas
+
+public boolean isQuotaEnabled(QuotaKind kind) {
+    return kind == QuotaKind.SUPPLY
+            ? canSupplyOnCredit
+            : canOriginateLoans;
+}
+
+public boolean typeAllowsQuota(QuotaKind kind) {
+    return kind == QuotaKind.SUPPLY
+            ? walletType.isMayEnableSupply()
+            : walletType.isMayEnableOrigination();
+}
+
+public boolean canUseQuota(QuotaKind kind) {
+    return isQuotaEnabled(kind) && typeAllowsQuota(kind);
+}
+
+public BigDecimal getQuotaRemaining(QuotaKind kind) {
+    return kind == QuotaKind.SUPPLY
+            ? supplyQuotaLimit
+            : originationQuotaLimit;
+}
+
+public void takeQuota(QuotaKind kind, BigDecimal amount) {
+    requirePositive(amount);
+
+    if (!canUseQuota(kind)) {
+        throw new IllegalStateException(kind + " quota is not enabled for this wallet");
+    }
+
+    if (getQuotaRemaining(kind).compareTo(amount) < 0) {
+        throw new IllegalStateException(kind + " quota exhausted");
+    }
+
+    setQuota(kind, getQuotaRemaining(kind).subtract(amount));
+}
+
+public void giveBackQuota(QuotaKind kind, BigDecimal amount) {
+    requirePositive(amount);
+
+    BigDecimal next = getQuotaRemaining(kind).add(amount);
+
+    if (next.compareTo(MAX_BALANCE) > 0) {
+        throw new IllegalStateException(kind + " quota would exceed the column capacity");
+    }
+
+    setQuota(kind, next);
+}
+
+public void increaseQuota(QuotaKind kind, BigDecimal amount) {
+    requirePositive(amount);
+
+    if (!canUseQuota(kind)) {
+        throw new IllegalStateException(kind + " quota is not enabled for this wallet");
+    }
+
+    BigDecimal next = getQuotaRemaining(kind).add(amount);
+
+    if (next.compareTo(MAX_BALANCE) > 0) {
+        throw new IllegalStateException(kind + " quota would exceed the column capacity");
+    }
+
+    setQuota(kind, next);
+}
+
+public void enableQuota(QuotaKind kind, BigDecimal remaining) {
+    requireNonNegative(remaining);
+
+    if (!typeAllowsQuota(kind)) {
+        throw new IllegalStateException("wallet type does not allow " + kind + " quota");
+    }
+
+    if (kind == QuotaKind.SUPPLY) {
+        canSupplyOnCredit = true;
+    } else {
+        canOriginateLoans = true;
+    }
+
+    setQuota(kind, remaining);
+}
+
+public void disableQuota(QuotaKind kind) {
+    if (kind == QuotaKind.SUPPLY) {
+        canSupplyOnCredit = false;
+    } else {
+        canOriginateLoans = false;
+    }
+}
+
+public void setQuotaRemaining(QuotaKind kind, BigDecimal remaining) {
+    requireNonNegative(remaining);
+
+    if (!isQuotaEnabled(kind)) {
+        throw new IllegalStateException(kind + " quota is not enabled for this wallet");
+    }
+
+    setQuota(kind, remaining);
+}
+
+private void setQuota(QuotaKind kind, BigDecimal value) {
+    if (kind == QuotaKind.SUPPLY) {
+        supplyQuotaLimit = value;
+    } else {
+        originationQuotaLimit = value;
+    }
+}
+
+// ---------------------------------------------------------------- pooled credit
+
+public void reserveCredit(BigDecimal amount) {
+    requirePositive(amount);
+    creditReserved = creditReserved.add(amount);
+}
+
+public void releaseCreditReservation(BigDecimal amount) {
+    requirePositive(amount);
+
+    if (creditReserved.compareTo(amount) < 0) {
+        throw new IllegalStateException("credit release exceeds the reserved amount");
+    }
+
+    creditReserved = creditReserved.subtract(amount);
+}
+
+public void applyCreditLimit(BigDecimal limit) {
+    requireNonNegative(limit);
+    this.creditLimit = limit;
+}
+
+// ---------------------------------------------------------------- validation
+
+private static void requireNonNegative(BigDecimal amount) {
+    if (amount == null || amount.signum() < 0) {
+        throw new IllegalArgumentException("limit must be zero or positive");
+    }
+}
 }

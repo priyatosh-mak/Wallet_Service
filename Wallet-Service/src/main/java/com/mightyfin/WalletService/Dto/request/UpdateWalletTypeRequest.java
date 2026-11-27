@@ -28,7 +28,19 @@ public class UpdateWalletTypeRequest {
     @DecimalMin("0.00")
     @Digits(integer = 16, fraction = 2)
     private BigDecimal defaultCreditLimit;
+    @NotNull(message = "mayEnableSupply is required")
+    private Boolean mayEnableSupply;
 
+    @NotNull(message = "mayEnableOrigination is required")
+    private Boolean mayEnableOrigination;
+
+    @DecimalMin("0.00")
+    @Digits(integer = 16, fraction = 2)
+    private BigDecimal defaultSupplyQuotaLimit;
+
+    @DecimalMin("0.00")
+    @Digits(integer = 16, fraction = 2)
+    private BigDecimal defaultOriginationQuotaLimit;
     @NotNull (message = "canExtendCredit is required")
     private Boolean canExtendCredit;
 

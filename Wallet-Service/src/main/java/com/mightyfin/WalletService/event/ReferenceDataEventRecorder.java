@@ -27,10 +27,9 @@ public class ReferenceDataEventRecorder {
     static final String WALLET_TYPE_ACTIVATED = "wallet_type.activated";
     static final String WALLET_TYPE_DEACTIVATED = "wallet_type.deactivated";
 
-        private final OutBoxService outboxService;
+    private final OutBoxService outboxService;
 
-
-         public void currencyCreated(Currency currency, AuthPrincipal actor) {
+    public void currencyCreated(Currency currency, AuthPrincipal actor) {
         Map<String, Object> payload = currencyPayload(currency, actor);
         payload.put("minorUnits", currency.getMinorUnits());
         record(CURRENCY_CREATED, CURRENCY_AGGREGATE, currency.getCode(), payload);
@@ -77,7 +76,8 @@ public class ReferenceDataEventRecorder {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("walletTypeId", type.getId());
         payload.put("code", type.getCode());
-        payload.put("canExtendCredit", type.isCanExtendCredit());
+        payload.put("mayEnableSupply", type.isMayEnableSupply());
+        payload.put("mayEnableOrigination", type.isMayEnableOrigination());
         payload.put("active", type.isActive());
         payload.put("performedBy", actor.userId());
         return payload;

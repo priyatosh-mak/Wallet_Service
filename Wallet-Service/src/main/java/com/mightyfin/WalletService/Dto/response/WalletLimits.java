@@ -17,6 +17,19 @@ public class WalletLimits {
     private BigDecimal disbursementQuotaLimit;
     private BigDecimal disbursementQuotaUsed;
     private DisbursementQuotaPeriod disbursementQuotaPeriod;
+    // private BigDecimal generalTransactionLimit;
+    // private WalletLimitPeriod generalTransactionPeriod;
+
+    // Limit 1
+    private boolean canSupplyOnCredit;
+    private BigDecimal supplyQuotaLimit;
+
+    // Limit 2
+    private boolean canOriginateLoans;
+    private BigDecimal originationQuotaLimit;
+
+    // Pooled credit
+    private BigDecimal creditReserved;
 
     public WalletLimits() {
     }

@@ -30,6 +30,18 @@ public class CreateWalletTypeRequest {
     @Size(max = 2000)
     private String description;
 
+    private Boolean mayEnableSupply;
+
+    private Boolean mayEnableOrigination;
+
+    @DecimalMin("0.00")
+    @Digits(integer = 16, fraction = 2)
+    private BigDecimal defaultSupplyQuotaLimit;
+
+    @DecimalMin("0.00")
+    @Digits(integer = 16, fraction = 2)
+    private BigDecimal defaultOriginationQuotaLimit;
+
     @DecimalMin("0.00")
     @Digits(integer = 16, fraction = 2)
     private BigDecimal defaultCreditLimit;
@@ -47,6 +59,8 @@ public class CreateWalletTypeRequest {
     private BigDecimal defaultGeneralTransactionLimit;
 
     private WalletLimitPeriod defaultGeneralTransactionPeriod;
+
+    
 
     @Size(max = 255)
     private String valueChainCategory;
